@@ -1,0 +1,27 @@
+<Window
+    x:Class="TodoMoro.MainWindow"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:TodoMoro"
+    xmlns:controls="using:Microsoft.UI.Xaml.Controls">
+
+    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="20">
+
+        <!-- Field to enter the minutes -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10">
+            <TextBlock Text="Duración (min):" VerticalAlignment="Center"/>
+            <controls:NumberBox x:Name="DurationBox" Value="25" Minimum="1" Maximum="120" Width="80"/>
+            <Button x:Name="Accept" Content=""  Click="Time_Changed" Width="50"/>
+        </StackPanel>
+
+        <!-- Timer -->
+        <TextBlock x:Name="TimerDisplay" Text="25:00" FontSize="48" HorizontalAlignment="Center"/>
+
+        <!-- Buttons -->
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10">
+            <Button x:Name="StartButton" Content="Iniciar" Click="StartButton_Click" Width="100"/>
+            <Button x:Name="PauseButton" Content="Pausar" Click="PauseButton_Click" Width="100"/>
+            <Button x:Name="ResetButton" Content="Reiniciar" Click="ResetButton_Click" Width="100"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

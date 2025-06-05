@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "TodoMoro (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "TodoMoro (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
