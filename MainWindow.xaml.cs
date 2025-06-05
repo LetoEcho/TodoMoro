@@ -5,18 +5,27 @@ using System.Timers;
 using Windows.Graphics;
 using Microsoft.UI.Windowing;
 using Windows.Graphics;
+using Microsoft.UI.Composition.Interactions;
 
 
 namespace TodoMoro
 {
     public sealed partial class MainWindow : Window
     {
-        private DispatcherTimer dispatcherTimer;     // Timer that updates every second
-        private TimeSpan timeLeft;                   // Current remaining timel
-        private TimeSpan defaultDuration;            // Default time (used on reboot)
         private bool isRunning = false;              // Flag to know if it is active
         private bool paused = false;                 // flag to know if it is paused
-        int minutes = 25;                            // Configurable minutes
+        private DispatcherTimer dispatcherTimer;     // Timer that updates every second
+
+        /* WORKING TIMER */
+        private TimeSpan timeLeftWorking;            // Current remaining timel
+        private TimeSpan defaultDurationWorking;     // Default time (used on reboot
+        private int minutesWorking = 25;             // Configurable minutes
+
+        /* REST TIMER */
+        private bool resting = false;
+        private TimeSpan timeLeftRest;
+        private TimeSpan defaultDurationRest;
+        private int minutesRest = 5;                    // Configurable minutes
 
 
         public MainWindow()
@@ -30,8 +39,8 @@ namespace TodoMoro
             appWindow.Title = "TodoMoro";
             appWindow.Resize(new SizeInt32(400, 750));
 
-            defaultDuration = TimeSpan.FromMinutes(25);  // Standard Pomodoro Duration
-            timeLeft = defaultDuration;
+            defaultDurationWorking = TimeSpan.FromMinutes(25);  // Standard Pomodoro Duration
+            timeLeftWorking = defaultDurationWorking;
 
             UpdateDisplay(); // Displays the initial time
         }
@@ -74,7 +83,7 @@ namespace TodoMoro
                 dispatcherTimer.Stop();
             }
 
-            timeLeft = defaultDuration;
+            timeLeftWorking = defaultDurationWorking;
             isRunning = false;
             UpdateDisplay();
         }
@@ -95,9 +104,9 @@ namespace TodoMoro
         // Every second updates the timer
         private void Timer_Tick(object sender, object e)
         {
-            if (timeLeft.TotalSeconds > 0)
+            if (timeLeftWorking.TotalSeconds > 0)
             {
-                timeLeft = timeLeft.Subtract(TimeSpan.FromSeconds(1));
+                timeLeftWorking = timeLeftWorking.Subtract(TimeSpan.FromSeconds(1));
                 UpdateDisplay();
             }
             else
@@ -111,9 +120,9 @@ namespace TodoMoro
         private void Time_Changed(object sender, RoutedEventArgs e)
         {
             // Read custom duration from input field
-            this.minutes = (int)DurationBox.Value;
-            this.timeLeft = TimeSpan.FromMinutes(this.minutes); // Use the chosen duration
-            this.defaultDuration = timeLeft;
+            this.minutesWorking = (int)DurationBox.Value;
+            this.timeLeftWorking = TimeSpan.FromMinutes(this.minutesWorking); // Use the chosen duration
+            this.defaultDurationWorking = timeLeftWorking;
             
             UpdateDisplay(); //Updates the current time with the new one
 
@@ -123,7 +132,7 @@ namespace TodoMoro
         // Update the timer text
         private void UpdateDisplay()
         { 
-            TimerDisplay.Text = timeLeft.ToString(@"mm\:ss");
+            TimerDisplay.Text = timeLeftWorking.ToString(@"mm\:ss");
         }
     }
 }
