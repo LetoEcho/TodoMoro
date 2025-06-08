@@ -1,11 +1,12 @@
+using Microsoft.UI.Composition.Interactions;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using System;
+using System.Threading.Tasks;
 using System.Timers;
 using Windows.Graphics;
-using Microsoft.UI.Windowing;
 using Windows.Graphics;
-using Microsoft.UI.Composition.Interactions;
 
 
 namespace TodoMoro
@@ -15,10 +16,13 @@ namespace TodoMoro
         private bool isRunning = false;              // Flag to know if it is active
         private bool paused = false;                 // flag to know if it is paused
         private DispatcherTimer dispatcherTimer;     // Timer that updates every second
+        private enum SessionType { Work, Rest }
+        private SessionType currentSession = SessionType.Work;
+        private TimeSpan timeLeft;            // Current remaining timel
+        private TimeSpan defaultDuration = TimeSpan.FromMinutes(25);     // Default time (used on reboot
 
         /* WORKING TIMER */
-        private TimeSpan timeLeftWorking;            // Current remaining timel
-        private TimeSpan defaultDurationWorking;     // Default time (used on reboot
+
         private int minutesWorking = 25;             // Configurable minutes
 
         /* REST TIMER */
@@ -39,8 +43,8 @@ namespace TodoMoro
             appWindow.Title = "TodoMoro";
             appWindow.Resize(new SizeInt32(400, 750));
 
-            defaultDurationWorking = TimeSpan.FromMinutes(25);  // Standard Pomodoro Duration
-            timeLeftWorking = defaultDurationWorking;
+            defaultDuration = TimeSpan.FromMinutes(25);  // Standard Pomodoro Duration
+            timeLeft = defaultDuration;
 
             UpdateDisplay(); // Displays the initial time
         }
@@ -48,20 +52,25 @@ namespace TodoMoro
         // Button: Start
         private void StartButton_Click(object sender, RoutedEventArgs e)
         {
-            if (!isRunning && !paused)
-            { 
-                UpdateDisplay();   // Shows the new time
-                StartTimer();      // Timer starts
-                isRunning = true;
-            }
-            else
+            if (!isRunning)
             {
+                // Si es una nueva sesión, toma el valor del NumberBox
+                if (currentSession == SessionType.Work)
+                {
+                    int minutes = (int)DurationBox.Value;
+                    timeLeft = TimeSpan.FromMinutes(minutes);
+                }
+                else
+                {
+                    int restMinutes = (int)RestBox.Value;
+                    timeLeft = TimeSpan.FromMinutes(restMinutes);
+                }
+
+                defaultDuration = timeLeft;
+                UpdateDisplay();
                 StartTimer();
                 isRunning = true;
-
             }
-
-                this.paused = false;
         }
 
         // Button: Pause
@@ -83,7 +92,7 @@ namespace TodoMoro
                 dispatcherTimer.Stop();
             }
 
-            timeLeftWorking = defaultDurationWorking;
+            timeLeft = defaultDuration;
             isRunning = false;
             UpdateDisplay();
         }
@@ -104,16 +113,42 @@ namespace TodoMoro
         // Every second updates the timer
         private void Timer_Tick(object sender, object e)
         {
-            if (timeLeftWorking.TotalSeconds > 0)
+            if (timeLeft.TotalSeconds > 0)
             {
-                timeLeftWorking = timeLeftWorking.Subtract(TimeSpan.FromSeconds(1));
+                timeLeft = timeLeft.Subtract(TimeSpan.FromSeconds(1));
                 UpdateDisplay();
             }
             else
             {
                 dispatcherTimer.Stop();
-                TimerDisplay.Text = "¡Tiempo!";
                 isRunning = false;
+
+                // Cambiar de sesión
+                if (currentSession == SessionType.Work)
+                {
+                    currentSession = SessionType.Rest;
+                    int restMinutes = (int)RestBox.Value;
+                    timeLeft = TimeSpan.FromMinutes(restMinutes);
+                    TimerDisplay.Text = "Descanso...";
+                }
+                else
+                {
+                    currentSession = SessionType.Work;
+                    int workMinutes = (int)DurationBox.Value;
+                    timeLeft = TimeSpan.FromMinutes(workMinutes);
+                    TimerDisplay.Text = "¡A trabajar!";
+                }
+
+                // Esperar 1 segundo y luego reiniciar automáticamente
+                Task.Delay(1000).ContinueWith(_ =>
+                {
+                    DispatcherQueue.TryEnqueue(() =>
+                    {
+                        UpdateDisplay();
+                        StartTimer();
+                        isRunning = true;
+                    });
+                });
             }
         }
 
@@ -121,18 +156,34 @@ namespace TodoMoro
         {
             // Read custom duration from input field
             this.minutesWorking = (int)DurationBox.Value;
-            this.timeLeftWorking = TimeSpan.FromMinutes(this.minutesWorking); // Use the chosen duration
-            this.defaultDurationWorking = timeLeftWorking;
-            
+            this.timeLeft = TimeSpan.FromMinutes(this.minutesWorking); // Use the chosen duration
+            this.defaultDuration = timeLeft;
+
             UpdateDisplay(); //Updates the current time with the new one
 
+        }
+
+        private void DurationBox_ValueChanged(object sender, Microsoft.UI.Xaml.Controls.NumberBoxValueChangedEventArgs e)
+        {
+            // Obtiene el nuevo valor introducido por el usuario
+            int newMinutes = (int)e.NewValue;
+
+            // Actualiza la duración por defecto
+            this.defaultDuration = TimeSpan.FromMinutes(newMinutes);
+
+            // Si el temporizador no está activo y estás en modo trabajo, actualiza también timeLeft
+            if (!isRunning && currentSession == SessionType.Work)
+            {
+                timeLeft = this.defaultDuration;
+                UpdateDisplay();
+            }
         }
 
 
         // Update the timer text
         private void UpdateDisplay()
-        { 
-            TimerDisplay.Text = timeLeftWorking.ToString(@"mm\:ss");
+        {
+            TimerDisplay.Text = timeLeft.ToString(@"mm\:ss");
         }
     }
 }
